@@ -1,0 +1,189 @@
+{% load static %}
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Panel del Administrador</title>
+
+    <!-- Fuentes Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+    <!-- Hoja de estilos en CSS puro -->
+    <link rel="stylesheet" href="{% static 'dashboard_admin.css' %}">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">A L M I - CRM</div>
+        <div class="navbar-user">
+            <span class="user-greeting">Hola, <strong>{{ request.user.nombre }}</strong></span>
+            <a href="{% url 'Base:logout' %}" class="btn-logout" title="Cerrar Sesión">
+                <span class="material-symbols-outlined">logout</span>
+                <span>Salir</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-container">
+
+        <!-- Header -->
+        <header class="page-header">
+            <h1>Administrador</h1>
+            <p>Manejo de acceso al sistema y permisos</p>
+        </header>
+
+        <!-- Mensajes Flash de Django -->
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert-message">
+                        <span class="material-symbols-outlined">info</span>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Formulario: Crear o Editar Usuario -->
+        <section class="card">
+            <div class="card-header">
+                <h2>
+                    {% if usuario_a_editar %}
+                        Editar Usuario: <span class="highlight-user">{{ usuario_a_editar.nombre_completo }}</span>
+                    {% else %}
+                        Add New User
+                    {% endif %}
+                </h2>
+                {% if usuario_a_editar %}
+                    <a href="{% url 'PanelAdmin:dashboard' %}" class="btn-cancel-edit">
+                        <span class="material-symbols-outlined">cancel</span>
+                        <span>Cancelar edición</span>
+                    </a>
+                {% endif %}
+            </div>
+
+            <form method="POST" class="form-grid">
+                {% csrf_token %}
+                {% if usuario_a_editar %}
+                    <input type="hidden" name="usuario_id" value="{{ usuario_a_editar.id }}">
+                {% endif %}
+
+                <div class="form-group">
+                    <label>NOMBRE</label>
+                    {{ form.nombre }}
+                </div>
+
+                <div class="form-group">
+                    <label>APELLIDO</label>
+                    {{ form.apellidos }}
+                </div>
+
+                <div class="form-group">
+                    <label>DNI</label>
+                    {{ form.dni }}
+                </div>
+
+                <div class="form-group">
+                    <label>EMAIL</label>
+                    {{ form.email }}
+                </div>
+
+                <div class="form-group">
+                    <label>TELÉFONO</label>
+                    {{ form.telefono }}
+                </div>
+
+                <div class="form-group">
+                    <label>CARGO</label>
+                    {{ form.cargo }}
+                </div>
+
+                <div class="form-group">
+                    <label>ROL EN SISTEMA</label>
+                    {{ form.rol }}
+                </div>
+
+                <div class="form-group form-actions">
+                    <button type="submit" class="btn-submit">
+                        <span class="material-symbols-outlined">{% if usuario_a_editar %}save{% else %}add{% endif %}</span>
+                        <span>{% if usuario_a_editar %}Actualizar Usuario{% else %}Agregar Usuario{% endif %}</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabla de Usuarios -->
+        <section class="card card-table">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>NAME</th>
+                            <th>CARGO</th>
+                            <th>ROL</th>
+                            <th>EMAIL</th>
+                            <th class="text-center">JOINING DATE</th>
+                            <th class="text-right">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr class="{% if not u.is_active %}row-inactive{% endif %}">
+                            <td class="user-cell">
+                                <div class="avatar">
+                                    {{ u.nombre|slice:":1" }}{{ u.apellidos|slice:":1" }}
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">{{ u.nombre_completo }}</span>
+                                    {% if not u.is_active %}
+                                        <span class="badge-inactive">(Inactivo)</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ u.cargo|default:"Sin cargo" }}</td>
+                            <td class="text-muted">
+                                {% if u.is_superuser %}
+                                    Super Admin
+                                {% else %}
+                                    {{ u.get_rol_display|default:"Sin rol" }}
+                                {% endif %}
+                            </td>
+                            <td>{{ u.email }}</td>
+                            <td class="text-center text-muted">{{ u.creado_en|date:"d/m/Y" }}</td>
+                            <td class="actions-cell text-right">
+                                <a href="?editar={{ u.id }}" class="action-btn edit" title="Editar datos">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </a>
+
+                                <a href="{% url 'PanelAdmin:reset_password' u.id %}" class="action-btn key" title="Restablecer clave al DNI" onclick="return confirm('¿Restablecer contraseña de {{ u.nombre }} a su DNI ({{ u.dni }})?');">
+                                    <span class="material-symbols-outlined">key</span>
+                                </a>
+
+                                <a href="{% url 'PanelAdmin:toggle_estado' u.id %}" class="action-btn toggle" title="{% if u.is_active %}Desactivar usuario{% else %}Activar usuario{% endif %}">
+                                    <span class="material-symbols-outlined">
+                                        {% if u.is_active %}delete{% else %}rotate_left{% endif %}
+                                    </span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="empty-table">
+                                No hay usuarios registrados en el sistema.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-footer">
+                <span>Mostrando {{ usuarios|length }} usuario(s)</span>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

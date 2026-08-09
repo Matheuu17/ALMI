@@ -1,0 +1,6 @@
+.venv/
+db.sqlite3
+contactos_archivos/
+__pycache__/
+*.pyc
+.env

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home{% endblock %}
+
+{% block nav_home %}is-active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Bienvenid@s</h1>
+  <p class="page-subtitle">¡Tu éxito es el nuestro! Comencemos el día con energía.</p>
+</div>
+
+<div class="home-kpis">
+  <div class="kpi-card">
+    <div class="kpi-card__icon"><i class="fa-solid fa-address-book"></i></div>
+    <div>
+      <p class="kpi-card__label">Total contactos</p>
+      <p class="kpi-card__value">{{total_contactos}}</p>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card__icon"><i class="fa-solid fa-building"></i></div>
+    <div>
+      <p class="kpi-card__label">Empresas</p>
+      <p class="kpi-card__value">{{total_empresas}}</p>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card__icon"><i class="fa-solid fa-user"></i></div>
+    <div>
+      <p class="kpi-card__label">Miembros</p>
+      <p class="kpi-card__value">{{total_miembros}}</p>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-card__icon"><i class="fa-solid fa-list-check"></i></div>
+    <div>
+      <p class="kpi-card__label">Actividades activas</p>
+      <p class="kpi-card__value">{{actividades_activas}}</p>
+    </div>
+  </div>
+</div>
+
+<div class="home-charts">
+  <div class="card chart-card">
+    <h3>Gafico 1</h3>
+  </div>
+
+  <div class="card chart-card">
+    <h3>Grafico 2</h3>
+  </div>
+</div>
+
+<div class="card upcoming-card">
+  <h3>Próximas actividades</h3>
+  <div class="upcoming-list">
+    {% for actividad in proximas_actividades %}
+      <div class="upcoming-list__row">
+        <div>
+          <p class="upcoming-list__title">{{ actividad.resumen }}</p>
+          <p class="upcoming-list__meta">
+            {{ actividad.asignado_a.nombre_completo|default:actividad.creado_por.nombre_completo }} - {{ actividad.fecha_limite|date:"d M" }}
+          </p>
+        </div>
+        <span class="badge badge--programado">{{ actividad.get_estado_display|upper }}</span>
+      </div>
+    {% empty %}
+      <div class="upcoming-list__row">
+        <p class="text-muted">No hay actividades próximas pendientes.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

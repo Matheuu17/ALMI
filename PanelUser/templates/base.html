@@ -1,0 +1,80 @@
+{% load static %}
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Jade Horizon | RR CRM{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1A5140" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 20A7 7 0 0 1 4 13V6a1 1 0 0 1 1-1h6a7 7 0 0 1 7 7 7 7 0 0 1-7 7z"/>
+            <path d="M11 20a7 7 0 0 1 7-7"/>
+          </svg>
+        </div>
+        <div class="sidebar__brand-text">
+          <h1>A L M I</h1>
+          <span>R.R.H.H. CRM</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a href="{% url 'PanelUser:home' %}" class="sidebar__link {% block nav_home %}{% endblock %}">
+          <i class="fa-solid fa-house"></i><span>Home</span>
+        </a>
+        <a href="{% url 'PanelUser:contactos' %}" class="sidebar__link {% block nav_contactos %}{% endblock %}">
+          <i class="fa-solid fa-user-group"></i><span>Contactos</span>
+        </a>
+        <a href="{% url 'PanelUser:actividades' %}" class="sidebar__link {% block nav_actividades %}{% endblock %}">
+          <i class="fa-solid fa-list-check"></i><span>Actividades</span>
+        </a>
+      </nav>
+
+      <div class="sidebar__footer">
+        <a href="{% url 'Base:logout' %}" class="sidebar__logout"  title="Cerrar Sesión">
+          <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <button class="topbar__notification" aria-label="Notificaciones">
+          <i class="fa-regular fa-bell"></i>
+          <span class="dot"></span>
+        </button>
+
+        <div class="topbar__user">
+          <div class="topbar__avatar" style="display:flex;align-items:center;justify-content:center;font-weight:600;color:#1A5140;">
+            {% block user_initial %}S{% endblock %}
+          </div>
+          <div class="topbar__user-info">
+            <p class="topbar__user-name">{% block user_name %}{{request.user.nombre|default:"Sin Nombre"}} {{request.user.apellidos|default:"Sin Apellido"}}{% endblock %}</p>
+            <p class="topbar__user-role">{% block user_role %}{{request.user.cargo|default:"Sin Cargo"}}{% endblock %}</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="footer">
+        {% block footer %}&copy; 2026 A L M  I {% endblock %}
+      </footer>
+
+    </div>
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

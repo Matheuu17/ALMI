@@ -1,0 +1,211 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+:root {
+    /* Paleta Jade Horizon, paleta dada por el club */
+    --auth-primary: #288760;
+    --auth-primary-hover: #1A5140;
+    --auth-text-main: #1A5140;
+    --auth-background: #eef8f1;
+    --auth-card: #ffffff;
+    --auth-border: #B7E5BA;
+    --auth-muted: #5CA87C;
+    --auth-danger: #b91c1c;
+    --auth-danger-soft: #fef2f2;
+    --auth-success: #288760;
+    --auth-success-soft: #eaf7f0;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    font-family: "Montserrat", "Segoe UI", tahoma, geneva, verdana, sans-serif;
+    color: var(--auth-text-main);
+    background:
+        linear-gradient(145deg, #f4fbf7 0%, var(--auth-background) 55%, #B7E5BA 100%);
+}
+
+button,
+input {
+    font: inherit;
+}
+
+.auth-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 32px 20px;
+}
+
+.auth-card {
+    width: min(100%, 360px);
+    padding: 24px 28px 30px;
+    background: var(--auth-card);
+    border: 1px solid var(--auth-border);
+    border-radius: 16px;
+    box-shadow: 0 16px 38px rgba(26, 81, 64, .09);
+}
+
+.auth-card-password {
+    width: min(100%, 380px);
+}
+
+.auth-back {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin: -4px 0 4px -8px;
+    color: var(--auth-text-main);
+    border-radius: 6px;
+    font-size: 22px;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.auth-back:hover,
+.auth-back:focus-visible {
+    background: var(--auth-background);
+    outline: none;
+}
+
+.auth-logo {
+    display: block;
+    width: min(100%, 190px);
+    height: 72px;
+    margin: 0 auto 8px;
+    object-fit: contain;
+}
+
+.auth-card h1 {
+    margin: 0 0 22px;
+    font-size: 22px;
+    line-height: 1.25;
+    text-align: center;
+    letter-spacing: 0;
+}
+
+.auth-intro {
+    margin: -10px 0 18px;
+    color: var(--auth-muted);
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+}
+
+.auth-form {
+    display: grid;
+    gap: 15px;
+}
+
+.auth-field {
+    display: grid;
+    gap: 6px;
+}
+
+.auth-field label {
+    color: var(--auth-text-main);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.auth-input {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    color: #111827;
+    background: #ffffff;
+    border: 1px solid var(--auth-border);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.auth-input::placeholder {
+    color: #a3c9b4;
+}
+
+.auth-input:focus {
+    border-color: var(--auth-primary);
+
+    box-shadow: 0 0 0 3px rgba(40, 135, 96, .12);
+}
+
+.auth-submit {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 3px;
+    padding: 9px 16px;
+    color: #ffffff;
+    background: var(--auth-primary);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background .15s, transform .12s;
+}
+
+.auth-submit:hover {
+    background: var(--auth-primary-hover);
+}
+
+.auth-submit:active {
+    transform: translateY(1px);
+}
+
+.auth-submit:focus-visible {
+    /* RGBA basado en #288760 */
+    outline: 3px solid rgba(40, 135, 96, .22);
+    outline-offset: 2px;
+}
+
+.auth-errors,
+.auth-message {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.auth-errors,
+.auth-message.error {
+    color: var(--auth-danger);
+    background: var(--auth-danger-soft);
+    border: 1px solid #fecaca;
+}
+
+.auth-message.success {
+    color: var(--auth-success);
+    background: var(--auth-success-soft);
+    border: 1px solid var(--auth-border);
+}
+
+.auth-errors p,
+.field-error {
+    margin: 0;
+}
+
+.field-error {
+    color: var(--auth-danger);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+@media (max-width: 480px) {
+    .auth-page {
+        align-items: start;
+        padding: 20px 14px;
+    }
+
+    .auth-card,
+    .auth-card-password {
+        width: 100%;
+        padding: 20px 22px 26px;
+    }
+}

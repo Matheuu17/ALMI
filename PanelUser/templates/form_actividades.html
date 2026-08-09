@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Programar actividad{% endblock %}
+
+{% block nav_actividades %}is-active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/formularios.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Programar actividad</h1>
+  <p class="page-subtitle">Completa los datos para agendar una nueva actividad.</p>
+</div>
+
+<div class="form-card">
+  <form method="post" action="" id="form-actividad">
+    {% csrf_token %}
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="tipo_actividad" class="form-label">Tipo</label>
+        <select id="tipo_actividad" name="tipo_actividad" class="form-control">
+          {% for tipo in tipos_actividad %}
+          <option value="{{ tipo }}">{{ tipo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_limite" class="form-label">Fecha límite</label>
+        <input type="date" id="fecha_limite" name="fecha_limite" class="form-control" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="resumen" class="form-label">Resumen</label>
+      <input type="text" id="resumen" name="resumen" class="form-control" placeholder="Ej. Coordinar entrevista con Nova Tech" required>
+    </div>
+
+    <div class="form-group mb-sm">
+      <label class="form-label" for="id_asignado_a">Asignado a (selección múltiple)</label>
+      <select id="id_asignado_a" name="asignado_a" class="form-control" multiple style="height: 110px;">
+        {% for contacto in contactos %}
+          <option value="{{ contacto.id }}">
+            {{ contacto.nombre }} ({% if contacto.tipo_contacto == 'empresa' %}Empresa{% else %}Miembro{% endif %})
+          </option>
+        {% endfor %}
+      </select>
+      <span class="text-muted" style="font-size: 0.75rem; color: #777; display: block; margin-top: 4px;">
+        Presiona Ctrl (o Cmd en Mac) para seleccionar más de un contacto.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label for="notas" class="form-label">Notas adicionales</label>
+      <textarea id="notas" name="notas" class="form-control" rows="4" placeholder="Detalles, contexto o próximos pasos..."></textarea>
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'PanelUser:actividades' %}" class="btn btn--secondary">Cancelar</a>
+      <button type="submit" class="btn btn--primary">Programar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

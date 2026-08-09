@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Contactos{% endblock %}
+
+{% block nav_contactos %}is-active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/formularios.css' %}">
+<link rel="stylesheet" href="{% static 'css/contactos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Contactos</h1>
+  <p class="page-subtitle">Empresas y miembros registrados en tu red.</p>
+</div>
+
+<!-- Toolbar de filtrado y búsqueda -->
+<div class="contacts-toolbar">
+  <div class="input-search contacts-toolbar__search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" id="contact-search" placeholder="Buscar contacto...">
+  </div>
+
+  <select id="contact-filter" class="select-filter">
+    <option value="todos">Todos</option>
+    <option value="empresa">Empresas</option>
+    <option value="miembro">Miembros</option>
+  </select>
+
+  <a href="{% url 'PanelUser:form_contacto' %}" class="btn btn--primary contacts-toolbar__add">
+    <i class="fa-solid fa-plus"></i>
+    Agregar contacto
+  </a>
+</div>
+
+<!-- Grid de Contactos -->
+<div class="contacts-grid" id="contacts-grid">
+  {% for contacto in contactos %}
+  <article class="contact-card"
+           data-id="{{ contacto.id }}"
+           data-nombre="{{ contacto.nombre }}"
+           data-tipo="{{ contacto.tipo_contacto }}"
+           data-tipo-display="{% if contacto.tipo_contacto == 'empresa' %}Empresa{% else %}Miembro{% endif %}"
+           data-carrera="{{ contacto.carrera_rubro|default:'' }}"
+           data-area="{{ contacto.area|default:'' }}"
+           data-telefono="{{ contacto.telefono|default:'' }}"
+           data-email="{{ contacto.email }}"
+           data-creado="{{ contacto.creado_por.nombre_completo|default:contacto.creado_por.nombre }}"
+           data-archivo="{% if contacto.archivo %}{{ contacto.archivo.url }}{% endif %}"
+           data-archivo-nombre="{% if contacto.archivo %}{{ contacto.archivo.name }}{% endif %}">
+
+    <h3 class="contact-card__name">{{ contacto.nombre }}</h3>
+    <span class="badge badge--{{ contacto.tipo_contacto }}">
+      {% if contacto.tipo_contacto == "empresa" %}Empresa{% else %}Miembro{% endif %}
+    </span>
+    <p class="contact-card__email">
+      <i class="fa-regular fa-envelope"></i>
+      {{ contacto.email }}
+    </p>
+
+    <div class="contact-card__footer">
+      <button type="button" class="icon-btn icon-btn--ghost icon-btn--sm btn-edit-contacto">
+        <i class="fa-solid fa-pen"></i>
+      </button>
+
+      <span class="contact-card__creator">
+        <i class="fa-regular fa-user"></i> {{ contacto.creado_por.nombre_completo|default:contacto.creado_por.nombre }}
+      </span>
+    </div>
+  </article>
+  {% empty %}
+  <p class="text-muted">Aún no hay contactos registrados.</p>
+  {% endfor %}
+</div>
+
+<!-- ================= MODAL VISTA DE DETALLE ================= -->
+<div id="modal-view-contacto" class="modal-overlay">
+  <div class="modal-card modal-card--lg">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <h2 id="view-nombre">Cargando...</h2>
+        <span id="view-tipo-badge" class="badge">Miembro</span>
+      </div>
+      <button type="button" class="btn-close-modal">&times;</button>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label"><i class="fa-regular fa-envelope"></i> Correo Electrónico</span>
+          <p id="view-email" class="detail-value">-</p>
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label"><i class="fa-solid fa-phone"></i> Teléfono</span>
+          <p id="view-telefono" class="detail-value">-</p>
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label"><i class="fa-solid fa-briefcase"></i> <span id="label-carrera-rubro">Carrera / Rubro</span></span>
+          <p id="view-carrera" class="detail-value">-</p>
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label"><i class="fa-solid fa-building-user"></i> Área</span>
+          <p id="view-area" class="detail-value">-</p>
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label"><i class="fa-regular fa-user"></i> Registrado por</span>
+          <p id="view-creado" class="detail-value">-</p>
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label"><i class="fa-solid fa-paperclip"></i> Archivo Adjunto</span>
+          <div id="view-archivo-container" class="detail-value">
+            <span class="text-muted">Sin archivo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions modal-actions--end">
+      <button type="button" class="btn btn--secondary btn-close-modal">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL DE EDICIÓN ================= -->
+<div id="modal-edit-contacto" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Editar Contacto</h2>
+      <button type="button" class="btn-close-modal" id="btn-close-modal">&times;</button>
+    </div>
+
+    <form id="form-edit-contacto" method="post" action="" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Fila 1: Nombre -->
+      <div class="form-group mb-sm">
+        <label class="form-label" id="edit-label-nombre" for="edit-nombre">Nombre y Apellido</label>
+        <input type="text" id="edit-nombre" name="nombre" class="form-control" required>
+      </div>
+
+      <!-- Fila 2: Tipo y Carrera/Rubro Dinámico -->
+      <div class="form-row mb-sm">
+        <div class="form-group">
+          <label class="form-label" for="edit-tipo">Tipo</label>
+          <select id="edit-tipo" name="tipo_contacto" class="form-control">
+            <option value="miembro">Miembro</option>
+            <option value="empresa">Empresa</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" id="edit-label-carrera-rubro" for="edit-carrera-rubro">Carrera</label>
+          <select id="edit-carrera-rubro" name="carrera_rubro" class="form-control">
+            <!-- Se puebla dinámicamente desde JS -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Fila 3: Área y Teléfono -->
+      <div class="form-row mb-sm">
+        <div class="form-group">
+          <label class="form-label" for="edit-area">Área</label>
+          <select id="edit-area" name="area" class="form-control">
+            {% for area_item in areas %}
+              <option value="{% if '---' in area_item %}{% else %}{{ area_item }}{% endif %}">
+                {% if '---' in area_item %}-- Seleccionar área --{% else %}{{ area_item }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-telefono">Teléfono</label>
+          <input type="text" id="edit-telefono" name="telefono" class="form-control">
+        </div>
+      </div>
+
+      <!-- Fila 4: Email -->
+      <div class="form-group mb-sm">
+        <label class="form-label" for="edit-email">Email</label>
+        <input type="email" id="edit-email" name="email" class="form-control" required>
+      </div>
+
+      <!-- Fila 5: Archivo Adjunto -->
+      <div class="form-group mb-md">
+        <label class="form-label">Archivo Adjunto / Documento</label>
+        <input type="file" name="archivo" class="form-control">
+        <div id="archivo-actual-container" class="mt-xs text-muted" style="font-size: var(--fs-small);"></div>
+      </div>
+
+      <!-- Acciones del Modal -->
+      <div class="modal-actions">
+        <button type="button" class="btn btn--danger-outline" id="btn-desactivar-contacto">
+          <i class="fa-solid fa-ban"></i> Desactivar
+        </button>
+
+        <div class="modal-actions__right">
+          <button type="button" class="btn btn--secondary btn-close-modal">Cancelar</button>
+          <button type="submit" class="btn btn--primary">Guardar cambios</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Formulario oculto para desactivación -->
+    <form id="form-desactivar-contacto" method="post" action="" style="display: none;">
+      {% csrf_token %}
+    </form>
+  </div>
+</div>
+
+<!-- Inyección de listas Python/Django a datos JSON para JS -->
+{{ carreras|json_script:"carreras-data" }}
+{{ rubros|json_script:"rubros-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/contactos.js' %}"></script>
+{% endblock %}

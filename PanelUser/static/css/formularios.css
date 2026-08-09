@@ -1,0 +1,118 @@
+/* ==========================================
+   COMPONENTES DE FORMULARIOS
+   ========================================== */
+
+.form-card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-xl);
+  max-width: 640px;
+  width: 100%;
+}
+
+.form-card form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.form-label {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+/* Control base para inputs, selects y textareas */
+.form-control {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  color: var(--color-text);
+  font-size: var(--fs-body);
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-bg);
+}
+
+/* Textarea */
+textarea.form-control {
+  resize: vertical;
+  min-height: 96px;
+  font-family: var(--font-primary);
+}
+
+/* Input de Fecha */
+input[type="date"].form-control {
+  color: var(--color-text);
+}
+
+input[type="date"].form-control::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(38%) sepia(9%) saturate(383%) hue-rotate(75deg);
+}
+
+/* Select de una sola opción (con flecha personalizada) */
+select.form-control:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23747873' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Select de múltiple opción */
+select.form-control[multiple] {
+  padding: 8px 10px;
+  height: auto;
+}
+
+/* Filas en Grid (2 Columnas) */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  width: 100%;
+}
+
+/* Botones de acción */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card {
+    padding: var(--space-lg);
+  }
+}

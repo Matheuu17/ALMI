@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Actividades{% endblock %}
+
+{% block nav_actividades %}is-active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/actividades.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Actividades</h1>
+  <p class="page-subtitle">Seguimiento de tus actividades como en un tablero Kanban.</p>
+</div>
+
+<div class="board-toolbar">
+  <a href="{% url 'PanelUser:form_actividad' %}" class="btn btn--primary">
+    <i class="fa-solid fa-plus"></i>
+    Nueva actividad
+  </a>
+</div>
+
+<div class="board">
+  {% for columna in columnas %}
+  <section class="board-row board-row--{{ columna.estado }}">
+    <div class="board-row__header">
+      <span class="board-row__dot"></span>
+      <h3>{{ columna.titulo }}</h3>
+      <span class="board-row__count">{{ columna.actividades|length }}</span>
+    </div>
+
+    <div class="board-row__cards">
+      {% for actividad in columna.actividades %}
+      <article class="activity-card"
+         data-id="{{ actividad.id }}"
+         data-resumen="{{ actividad.resumen }}"
+         data-tipo-key="{{ actividad.tipo_actividad }}"
+         data-tipo="{{ actividad.get_tipo_actividad_display|default:actividad.tipo_actividad }}"
+         data-estado-key="{{ actividad.estado }}"
+         data-estado="{{ columna.titulo }}"
+         data-asignado-ids="{% for c in actividad.asignado_a.all %}{{ c.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+         data-asignado="{% if actividad.asignado_a.exists %}{% for c in actividad.asignado_a.all %}{{ c.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Sin asignar{% endif %}"
+         data-creador="{% if actividad.creado_por.nombre_completo %}{{ actividad.creado_por.nombre_completo }}{% elif actividad.creado_por.nombre %}{{ actividad.creado_por.nombre }} {{ actividad.creado_por.apellido|default:'' }}{% else %}{{ actividad.creado_por }}{% endif %}"
+         data-fecha="{{ actividad.fecha_limite|date:'d/m/Y' }}"
+         data-fecha-iso="{{ actividad.fecha_limite|date:'Y-m-d' }}"
+         data-notas="{{ actividad.notas|default:'' }}">
+
+        <div class="activity-card__top">
+          <h4 class="activity-card__title">{{ actividad.resumen }}</h4>
+          <div class="activity-card__actions">
+
+            <!-- Botón Editar (Lápiz) -->
+            <button type="button" class="icon-btn icon-btn--primary icon-btn--sm btn-edit-actividad" title="Editar actividad" onclick="event.stopPropagation();">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+
+            {% if columna.estado != 'completada' %}
+              <form method="post" action="{% url 'PanelUser:completar_actividad' actividad.id %}" style="display: inline;">
+                {% csrf_token %}
+                {% if columna.estado == 'pendiente' %}
+                  <button type="submit" class="icon-btn icon-btn--primary icon-btn--sm" title="Iniciar actividad (pasar a En Proceso)" onclick="event.stopPropagation();">
+                    <i class="fa-solid fa-play"></i>
+                  </button>
+                {% else %}
+                  <button type="submit" class="icon-btn icon-btn--success icon-btn--sm" title="Marcar como completada" onclick="event.stopPropagation();">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                {% endif %}
+              </form>
+            {% endif %}
+
+            <form method="post" action="{% url 'PanelUser:eliminar_actividad' actividad.id %}" style="display: inline;" onsubmit="event.stopPropagation(); return confirm('¿Estás seguro de que deseas eliminar esta actividad?');">
+              {% csrf_token %}
+              <button type="submit" class="icon-btn icon-btn--danger icon-btn--sm" title="Eliminar actividad" onclick="event.stopPropagation();">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </form>
+
+          </div>
+        </div>
+
+        <p class="activity-card__user">
+          <i class="fa-regular fa-user"></i>
+          {% if actividad.asignado_a.exists %}
+            {% for contacto in actividad.asignado_a.all %}
+              {{ contacto.nombre }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          {% else %}
+            Sin asignar
+          {% endif %}
+        </p>
+
+        <div class="activity-card__footer">
+          <span class="activity-card__dates">
+            <i class="fa-regular fa-calendar"></i>
+            {{ actividad.fecha_limite|date:"d/m/Y" }}
+          </span>
+
+          <span class="activity-card__creator">
+            <i class="fa-solid fa-user-pen"></i>
+            {% if actividad.creado_por.nombre_completo %}
+              {{ actividad.creado_por.nombre_completo }}
+            {% elif actividad.creado_por.nombre %}
+              {{ actividad.creado_por.nombre }} {{ actividad.creado_por.apellido|default:'' }}
+            {% else %}
+              {{ actividad.creado_por }}
+            {% endif %}
+          </span>
+        </div>
+      </article>
+      {% empty %}
+      <p class="text-muted board-row__empty">No hay actividades en este estado.</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+<!-- ==========================================
+     MODAL 1: DETALLE DE ACTIVIDAD (VER)
+     ========================================== -->
+<div class="modal-overlay" id="modal-view-actividad">
+  <div class="modal-card">
+    <button type="button" class="btn-close-modal" aria-label="Cerrar modal">&times;</button>
+
+    <div class="modal-header">
+      <span class="badge badge--miembro" id="view-tipo-badge">Actividad</span>
+      <h2 id="view-resumen" style="margin-top: 10px;">Resumen de la Actividad</h2>
+    </div>
+
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Estado</span>
+          <span class="info-value" id="view-estado">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Fecha límite</span>
+          <span class="info-value" id="view-fecha">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Asignado a</span>
+          <span class="info-value" id="view-asignado">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Creado por</span>
+          <span class="info-value" id="view-creador">-</span>
+        </div>
+      </div>
+
+      <div class="info-notes-container" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+        <span class="info-label" style="display: block; font-weight: 600; margin-bottom: 5px;">Notas Adicionales:</span>
+        <p class="info-value text-muted" id="view-notas" style="white-space: pre-line; background: #f9f9f9; padding: 12px; border-radius: 8px; margin: 0;">Sin notas adicionales.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL EDITAR ACTIVIDAD (Con Estado reañadido)
+     ========================================== -->
+<div class="modal-overlay" id="modal-edit-actividad">
+  <div class="modal-card">
+    <button type="button" class="btn-close-modal" aria-label="Cerrar modal">&times;</button>
+
+    <div class="modal-header">
+      <h2>Editar Actividad</h2>
+    </div>
+
+    <form id="form-edit-actividad" method="post" action="">
+      {% csrf_token %}
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px; margin-top: 15px;">
+
+        <!-- Campo Resumen / Asunto -->
+        <div class="form-group">
+          <label class="form-label" for="edit-resumen">Resumen / Asunto</label>
+          <input type="text" id="edit-resumen" name="resumen" class="form-control" required>
+        </div>
+
+        <!-- Fila: Tipo y Estado -->
+        <div class="form-row-grid">
+          <div class="form-group">
+            <label class="form-label" for="edit-tipo">Tipo</label>
+            <select id="edit-tipo" name="tipo_actividad" class="form-control" required>
+              {% for tipo_item in tipos_actividad %}
+                {% if not '---' in tipo_item %}
+                  <option value="{{ tipo_item }}">{{ tipo_item }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-estado">Estado</label>
+            <select id="edit-estado" name="estado" class="form-control" required>
+              <option value="pendiente">Pendiente</option>
+              <option value="en_proceso">En Proceso</option>
+              <option value="completada">Completada</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campo Fecha límite -->
+        <div class="form-group">
+          <label class="form-label" for="edit-fecha">Fecha límite</label>
+          <input type="date" id="edit-fecha" name="fecha_limite" class="form-control" required>
+        </div>
+
+        <!-- Campo Asignado a (Selección Múltiple) -->
+        <div class="form-group">
+          <label class="form-label" for="edit-asignado">Asignado a (selección múltiple)</label>
+          <select id="edit-asignado" name="asignado_a" class="form-control" multiple style="height: 100px;">
+            {% for contacto in contactos %}
+              <option value="{{ contacto.id }}">
+                {{ contacto.nombre }} ({% if contacto.tipo_contacto == 'empresa' %}Empresa{% else %}Miembro{% endif %})
+              </option>
+            {% endfor %}
+          </select>
+          <span class="text-muted" style="font-size: 0.75rem; color: #777;">Presiona Ctrl (o Cmd en Mac) para seleccionar varios.</span>
+        </div>
+
+        <!-- Campo Notas Adicionales -->
+        <div class="form-group">
+          <label class="form-label" for="edit-notas">Notas adicionales</label>
+          <textarea id="edit-notas" name="notas" class="form-control" rows="3" placeholder="Contexto o detalles..."></textarea>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn--secondary btn-close-modal">Cancelar</button>
+        <button type="submit" class="btn btn--primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/actividades.js' %}"></script>
+{% endblock %}
