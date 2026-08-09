@@ -1,4 +1,4 @@
-# ALMI CRM 🚀
+# ALMI 🚀
 
 Un sistema de gestión de relaciones con clientes (CRM) y tablero Kanban de actividades desarrollado en Django.
 
