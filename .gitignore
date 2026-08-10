@@ -4,3 +4,4 @@ contactos_archivos/
 __pycache__/
 *.pyc
 .env
+.idea/
