@@ -83,7 +83,17 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         blank=True,
         help_text='Etiqueta/Badge visible (Ej: Directora, Coordinador, Ejecutivo)'
     )
-    rol = models.CharField(max_length=25, choices=ROL, blank=True, default='')
+    rol = models.CharField(max_length=25, choices=ROL, blank=False, null=False )
+    def clean(self):
+        super().clean()
+        # Si NO es superusuario y no seleccionó rol, lanzar error explícito
+        if not self.is_superuser and not self.rol:
+            raise ValidationError({'rol': 'El rol en el sistema es obligatorio.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Fuerza a que ejecute las reglas de clean() antes de insertar en BD
+        super().save(*args, **kwargs)
+
     area = models.CharField(max_length=50, choices=Area.OPCIONES_AREA, blank=True, default='')
 
     # Flags de Estado y Permisos
@@ -104,8 +114,8 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     @property
     def es_admin_crm(self):
-        """Otorga permisos de acceso al /panel-admin."""
-        return self.is_superuser or self.rol == 'admin_crm'
+        """Acceso exclusivo a/panel-admin SI Y SOLO SI es tiene rol de "admin_crm"."""
+        return not self.is_superuser and self.rol == 'admin_crm'
 
     @property
     def es_panel_user(self):

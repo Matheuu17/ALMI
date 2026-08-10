@@ -13,6 +13,7 @@
 </head>
 <body>
   <div class="app-container">
+    <!-- BARRA LATERAL (SIDEBAR) -->
     <aside class="sidebar">
       <div class="sidebar__brand">
         <div class="sidebar__logo">
@@ -40,12 +41,13 @@
       </nav>
 
       <div class="sidebar__footer">
-        <a href="{% url 'Base:logout' %}" class="sidebar__logout"  title="Cerrar Sesión">
+        <a href="{% url 'Base:logout' %}" class="sidebar__logout" title="Cerrar Sesión">
           <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
         </a>
       </div>
     </aside>
 
+    <!-- CONTENEDOR PRINCIPAL -->
     <div class="main-wrapper">
       <header class="topbar">
         <button class="topbar__notification" aria-label="Notificaciones">
@@ -58,20 +60,31 @@
             {% block user_initial %}S{% endblock %}
           </div>
           <div class="topbar__user-info">
-            <p class="topbar__user-name">{% block user_name %}{{request.user.nombre|default:"Sin Nombre"}} {{request.user.apellidos|default:"Sin Apellido"}}{% endblock %}</p>
-            <p class="topbar__user-role">{% block user_role %}{{request.user.cargo|default:"Sin Cargo"}}{% endblock %}</p>
+            <p class="topbar__user-name">{% block user_name %}{{ request.user.nombre|default:"Sin Nombre" }} {{ request.user.apellidos|default:"Sin Apellido" }}{% endblock %}</p>
+            <p class="topbar__user-role">{% block user_role %}{{ request.user.cargo|default:"Sin Cargo" }}{% endblock %}</p>
           </div>
         </div>
       </header>
 
       <main class="main-content">
+        <!-- 🔔 BLOQUE DE ALERTAS Y MENSAJES -->
+        {% if messages %}
+          <div class="messages-container" style="margin-bottom: 20px;">
+            {% for message in messages %}
+              <div class="alert alert--{{ message.tags }}" style="padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; background-color: #eef7f4; color: #114c3a; border: 1px solid #a3d9c9;">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Contenido dinámico de cada vista -->
         {% block content %}{% endblock %}
       </main>
 
       <footer class="footer">
-        {% block footer %}&copy; 2026 A L M  I {% endblock %}
+        {% block footer %}&copy; 2026 A L M I{% endblock %}
       </footer>
-
     </div>
   </div>
 

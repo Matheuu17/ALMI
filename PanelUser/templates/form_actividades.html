@@ -7,6 +7,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/formularios.css' %}">
+<link rel="stylesheet" href="{% static 'css/actividades.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -40,18 +41,17 @@
       <input type="text" id="resumen" name="resumen" class="form-control" placeholder="Ej. Coordinar entrevista con Nova Tech" required>
     </div>
 
-    <div class="form-group mb-sm">
-      <label class="form-label" for="id_asignado_a">Asignado a (selección múltiple)</label>
-      <select id="id_asignado_a" name="asignado_a" class="form-control" multiple style="height: 110px;">
-        {% for contacto in contactos %}
-          <option value="{{ contacto.id }}">
-            {{ contacto.nombre }} ({% if contacto.tipo_contacto == 'empresa' %}Empresa{% else %}Miembro{% endif %})
-          </option>
-        {% endfor %}
-      </select>
-      <span class="text-muted" style="font-size: 0.75rem; color: #777; display: block; margin-top: 4px;">
-        Presiona Ctrl (o Cmd en Mac) para seleccionar más de un contacto.
-      </span>
+    <!-- Componente Asignado a (Estilo Gmail) -->
+    <div class="form-group position-relative">
+      <label class="form-label">Asignado a</label>
+
+      <div class="email-chips-input" id="chips-container">
+        <div class="chips-list" id="chips-list"></div>
+        <input type="text" id="contact-search-input" placeholder="Buscar contacto por nombre o correo..." autocomplete="off">
+      </div>
+
+      <div class="contact-suggestions-dropdown" id="contact-suggestions"></div>
+      <div id="hidden-inputs-container"></div>
     </div>
 
     <div class="form-group">
@@ -65,4 +65,11 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.CONTACTOS_DATA = {{ contactos_json|safe }};
+</script>
+<script src="{% static 'js/actividades.js' %}"></script>
 {% endblock %}

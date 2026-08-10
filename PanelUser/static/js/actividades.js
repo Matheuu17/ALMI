@@ -1,10 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // ==========================================
+  // 1. MANEJO DE MODALES (VER / EDITAR)
+  // ==========================================
   const modalView = document.getElementById("modal-view-actividad");
   const modalEdit = document.getElementById("modal-edit-actividad");
-  const closeBtns = document.querySelectorAll(".btn-close-modal");
+  const closeBtns = document.querySelectorAll(".btn-close-modal, .js-close-modal");
   const formEdit = document.getElementById("form-edit-actividad");
 
-  // 1. ABRIR MODAL VISTA DETALLE
+
+  // Abrir modal Ver Detalle
   document.querySelectorAll(".activity-card").forEach((card) => {
     card.addEventListener("click", (e) => {
       if (e.target.closest(".activity-card__actions")) return;
@@ -35,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // 2. ABRIR MODAL EDITAR (LÁPIZ)
+  // Abrir modal Editar (Lápiz)
   document.querySelectorAll(".btn-edit-actividad").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -62,20 +66,20 @@ document.addEventListener("DOMContentLoaded", () => {
       if (inputFecha) inputFecha.value = data.fechaIso || "";
       if (textareaNotas) textareaNotas.value = data.notas || "";
 
-      // Selección múltiple de contactos asignados
-      const asignadoSelect = document.getElementById("edit-asignado");
-      if (asignadoSelect) {
-        const selectedIds = data.asignadoIds ? data.asignadoIds.split(",") : [];
-        Array.from(asignadoSelect.options).forEach((opt) => {
-          opt.selected = selectedIds.includes(opt.value);
-        });
+      // Carga de chips asignados al editar
+      if (window.editChipsManager) {
+        const rawIds = data.asignadoIds || "";
+        const selectedIds = rawIds
+          ? rawIds.split(",").map((i) => parseInt(i.trim(), 10)).filter(Boolean)
+          : [];
+        window.editChipsManager.setSelectedIds(selectedIds);
       }
 
       modalEdit?.classList.add("is-open");
     });
   });
 
-  // 3. CIERRE DE MODALES
+  // Cierre de modales (tanto botón X como botón Cancelar)
   closeBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       modalView?.classList.remove("is-open");
@@ -83,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // 4. CIERRE AL HACER CLIC EN EL BLUR (FONDO)
+  // Cierre al hacer clic en el fondo oscuro
   document.querySelectorAll(".modal-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === e.currentTarget) {
@@ -91,4 +95,127 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+
+  // ==========================================
+  // 2. COMPONENTE BUSCADOR DE CHIPS (REUTILIZABLE)
+  // ==========================================
+  function initChipsInput(prefix = "") {
+    const containerId = prefix ? `${prefix}-chips-container` : "chips-container";
+    const searchInputId = prefix ? `${prefix}-contact-search-input` : "contact-search-input";
+    const dropdownId = prefix ? `${prefix}-contact-suggestions` : "contact-suggestions";
+    const chipsListId = prefix ? `${prefix}-chips-list` : "chips-list";
+    const hiddenInputsId = prefix ? `${prefix}-hidden-inputs-container` : "hidden-inputs-container";
+
+    const container = document.getElementById(containerId);
+    const searchInput = document.getElementById(searchInputId);
+    const suggestionsDropdown = document.getElementById(dropdownId);
+    const chipsList = document.getElementById(chipsListId);
+    const hiddenInputsContainer = document.getElementById(hiddenInputsId);
+
+    if (!container || !searchInput || !suggestionsDropdown) return null;
+
+    const allContacts = window.CONTACTOS_DATA || [];
+    let selectedIds = new Set();
+
+    container.addEventListener("click", () => searchInput.focus());
+
+    function renderChips() {
+      chipsList.innerHTML = "";
+      hiddenInputsContainer.innerHTML = "";
+
+      selectedIds.forEach((id) => {
+        const contact = allContacts.find((c) => c.id == id);
+        if (!contact) return;
+
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.innerHTML = `
+          <span>${contact.nombre}</span>
+          <button type="button" class="chip__remove" data-id="${contact.id}">&times;</button>
+        `;
+        chipsList.appendChild(chip);
+
+        const hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "asignado_a";
+        hiddenInput.value = contact.id;
+        hiddenInputsContainer.appendChild(hiddenInput);
+      });
+    }
+
+    function renderSuggestions(filterText = "") {
+      suggestionsDropdown.innerHTML = "";
+      const filter = (filterText || "").toLowerCase().trim();
+
+      const matches = allContacts.filter((c) => {
+        if (selectedIds.has(c.id)) return false;
+        const nombreMatch = (c.nombre || "").toLowerCase().includes(filter);
+        const emailMatch = (c.email || "").toLowerCase().includes(filter);
+        return nombreMatch || emailMatch;
+      });
+
+      if (matches.length === 0) {
+        suggestionsDropdown.classList.remove("is-active");
+        return;
+      }
+
+      matches.forEach((c) => {
+        const item = document.createElement("div");
+        item.className = "suggestion-item";
+        const inicial = (c.nombre && c.nombre.length > 0) ? c.nombre.charAt(0).toUpperCase() : "?";
+
+        item.innerHTML = `
+          <div class="suggestion-avatar">${inicial}</div>
+          <div class="suggestion-info">
+            <span class="suggestion-name">${c.nombre || 'Sin nombre'}</span>
+            <span class="suggestion-email">${c.email || 'Sin correo'}</span>
+          </div>
+        `;
+
+        item.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          selectedIds.add(c.id);
+          renderChips();
+          searchInput.value = "";
+          suggestionsDropdown.classList.remove("is-active");
+          searchInput.focus();
+        });
+
+        suggestionsDropdown.appendChild(item);
+      });
+
+      suggestionsDropdown.classList.add("is-active");
+    }
+
+    searchInput.addEventListener("focus", () => renderSuggestions(searchInput.value));
+    searchInput.addEventListener("input", (e) => renderSuggestions(e.target.value));
+
+    chipsList.addEventListener("click", (e) => {
+      if (e.target.classList.contains("chip__remove")) {
+        e.stopPropagation();
+        const id = parseInt(e.target.dataset.id, 10);
+        selectedIds.delete(id);
+        renderChips();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!container.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+        suggestionsDropdown.classList.remove("is-active");
+      }
+    });
+
+    return {
+      setSelectedIds: (idsArray) => {
+        selectedIds = new Set(idsArray);
+        renderChips();
+      }
+    };
+  }
+
+  // Inicializar buscador en vista de creación
+  initChipsInput("");
+
+  // Inicializar buscador en modal de edición
+  window.editChipsManager = initChipsInput("edit");
 });

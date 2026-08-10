@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from .forms import ContactoForm, ActividadForm
 from .models import Contacto, Actividad
-
+import json
 # Listas de opciones de catálogo
 CARRERAS_LIST = [
     '--------------',
@@ -172,6 +172,10 @@ def actividades_view(request):
     actividades_completadas = Actividad.objects.filter(estado='completada').order_by('-id')[:10]
 
     contactos = Contacto.objects.filter(activo=True).order_by('nombre')
+    contactos_data = [
+        {'id': c.id, 'nombre': c.nombre or '', 'email': c.email or ''}
+        for c in contactos
+    ]
 
     columnas = [
         {'estado': 'pendiente', 'titulo': 'Pendientes', 'actividades': actividades_pendientes},
@@ -182,6 +186,7 @@ def actividades_view(request):
     context = {
         'columnas': columnas,
         'contactos': contactos,
+        'contactos_json': json.dumps(contactos_data),
         'tipos_actividad': TIPOS_ACTIVIDAD_LIST,
     }
     return render(request, 'actividades.html', context)
@@ -189,14 +194,13 @@ def actividades_view(request):
 
 @login_required
 def form_actividades_view(request):
-    """Procesa el formulario para la creación de una nueva actividad con asignación múltiple."""
     if request.method == 'POST':
         form = ActividadForm(request.POST)
         if form.is_valid():
             actividad = form.save(commit=False)
             actividad.creado_por = request.user
             actividad.save()
-            form.save_m2m()  # Guarda los contactos en el ManyToManyField
+            form.save_m2m()  # Guarda los contactos asignados (ManyToManyField)
 
             messages.success(request, 'Actividad programada correctamente.')
             return redirect('PanelUser:actividades')
@@ -205,15 +209,23 @@ def form_actividades_view(request):
     else:
         form = ActividadForm()
 
-    contactos = Contacto.objects.filter(activo=True).order_by('nombre')
+        # Obtener contactos y serializar en JSON para el buscador JS
+        contactos_qs = Contacto.objects.filter(activo=True).order_by('nombre')
+        contactos_data = [
+            {
+                'id': c.id,
+                'nombre': c.nombre or '',
+                'email': c.email or ''
+            }
+            for c in contactos_qs
+        ]
 
-    context = {
-        'form': form,
-        'contactos': contactos,
-        'tipos_actividad': TIPOS_ACTIVIDAD_LIST,
-    }
-    return render(request, 'form_actividades.html', context)
-
+        context = {
+            'form': form,
+            'contactos_json': json.dumps(contactos_data),
+            'tipos_actividad': TIPOS_ACTIVIDAD_LIST,
+        }
+        return render(request, 'form_actividades.html', context)
 
 @login_required
 @require_POST

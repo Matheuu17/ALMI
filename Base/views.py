@@ -1,6 +1,7 @@
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.contrib import messages
 
 from .forms import CambioPasswordInicialForm, LoginForm
 
@@ -12,6 +13,9 @@ def redirigir_por_rol(user):
     Redirige al usuario a su panel correspondiente según sus propiedades de rol.
     Si no posee un rol válido, cierra la sesión para prevenir bucles de redirección.
     """
+    if user.is_superuser:
+        return redirect('/admin/')
+
     if user.es_admin_crm:
         return redirect('PanelAdmin:dashboard')
     elif user.es_panel_user:
@@ -28,6 +32,11 @@ def login_view(request):
     Gestiona el inicio de sesión de usuarios.
     Si ya está autenticado, lo redirige a su panel o a cambiar contraseña si es su primer ingreso.
     """
+    #Limpiamos los mensajes
+    storage = messages.get_messages(request)
+    for _ in storage:
+        pass
+
     if request.user.is_authenticated:
         if getattr(request.user, 'debe_cambiar_password', False):
             return redirect('Base:cambiar_password')

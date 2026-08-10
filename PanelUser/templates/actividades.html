@@ -158,79 +158,64 @@
   </div>
 </div>
 
-<!-- ==========================================
-     MODAL EDITAR ACTIVIDAD (Con Estado reañadido)
-     ========================================== -->
+<!-- MODAL EDITAR ACTIVIDAD -->
 <div class="modal-overlay" id="modal-edit-actividad">
   <div class="modal-card">
-    <button type="button" class="btn-close-modal" aria-label="Cerrar modal">&times;</button>
+    <button type="button" class="btn-close-modal" aria-label="Cerrar">&times;</button>
+    <h2 class="modal-title" style="margin-bottom: 16px; color: var(--color-primary, #114c3a);">Editar Actividad</h2>
 
-    <div class="modal-header">
-      <h2>Editar Actividad</h2>
-    </div>
-
-    <form id="form-edit-actividad" method="post" action="">
+    <form method="post" action="" id="form-edit-actividad">
       {% csrf_token %}
-      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px; margin-top: 15px;">
 
-        <!-- Campo Resumen / Asunto -->
-        <div class="form-group">
-          <label class="form-label" for="edit-resumen">Resumen / Asunto</label>
-          <input type="text" id="edit-resumen" name="resumen" class="form-control" required>
-        </div>
-
-        <!-- Fila: Tipo y Estado -->
-        <div class="form-row-grid">
-          <div class="form-group">
-            <label class="form-label" for="edit-tipo">Tipo</label>
-            <select id="edit-tipo" name="tipo_actividad" class="form-control" required>
-              {% for tipo_item in tipos_actividad %}
-                {% if not '---' in tipo_item %}
-                  <option value="{{ tipo_item }}">{{ tipo_item }}</option>
-                {% endif %}
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="edit-estado">Estado</label>
-            <select id="edit-estado" name="estado" class="form-control" required>
-              <option value="pendiente">Pendiente</option>
-              <option value="en_proceso">En Proceso</option>
-              <option value="completada">Completada</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Campo Fecha límite -->
-        <div class="form-group">
-          <label class="form-label" for="edit-fecha">Fecha límite</label>
-          <input type="date" id="edit-fecha" name="fecha_limite" class="form-control" required>
-        </div>
-
-        <!-- Campo Asignado a (Selección Múltiple) -->
-        <div class="form-group">
-          <label class="form-label" for="edit-asignado">Asignado a (selección múltiple)</label>
-          <select id="edit-asignado" name="asignado_a" class="form-control" multiple style="height: 100px;">
-            {% for contacto in contactos %}
-              <option value="{{ contacto.id }}">
-                {{ contacto.nombre }} ({% if contacto.tipo_contacto == 'empresa' %}Empresa{% else %}Miembro{% endif %})
-              </option>
-            {% endfor %}
-          </select>
-          <span class="text-muted" style="font-size: 0.75rem; color: #777;">Presiona Ctrl (o Cmd en Mac) para seleccionar varios.</span>
-        </div>
-
-        <!-- Campo Notas Adicionales -->
-        <div class="form-group">
-          <label class="form-label" for="edit-notas">Notas adicionales</label>
-          <textarea id="edit-notas" name="notas" class="form-control" rows="3" placeholder="Contexto o detalles..."></textarea>
-        </div>
-
+      <div class="form-group">
+        <label for="edit-resumen" class="form-label">Resumen / Asunto</label>
+        <input type="text" id="edit-resumen" name="resumen" class="form-control" required>
       </div>
 
-      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-        <button type="button" class="btn btn--secondary btn-close-modal">Cancelar</button>
+      <div class="form-row-grid">
+        <div class="form-group">
+          <label for="edit-tipo" class="form-label">Tipo</label>
+          <select id="edit-tipo" name="tipo_actividad" class="form-control">
+            {% for tipo in tipos_actividad %}
+            <option value="{{ tipo }}">{{ tipo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-estado" class="form-label">Estado</label>
+          <select id="edit-estado" name="estado" class="form-control">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En Proceso</option>
+            <option value="completada">Completada</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-fecha" class="form-label">Fecha límite</label>
+        <input type="date" id="edit-fecha" name="fecha_limite" class="form-control" required>
+      </div>
+
+      <!-- Asignado a (Chips estilo Gmail) -->
+      <div class="form-group position-relative">
+        <label class="form-label">Asignado a</label>
+        <div class="email-chips-input" id="edit-chips-container">
+          <div class="chips-list" id="edit-chips-list"></div>
+          <input type="text" id="edit-contact-search-input" placeholder="Buscar contacto por nombre o correo..." autocomplete="off">
+        </div>
+        <div class="contact-suggestions-dropdown" id="edit-contact-suggestions"></div>
+        <div id="edit-hidden-inputs-container"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-notas" class="form-label">Notas adicionales</label>
+        <textarea id="edit-notas" name="notas" class="form-control" rows="3"></textarea>
+      </div>
+
+      <!-- Pie del Formulario -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn--secondary js-close-modal">Cancelar</button>
         <button type="submit" class="btn btn--primary">Guardar cambios</button>
       </div>
     </form>
@@ -239,5 +224,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  window.CONTACTOS_DATA = {{ contactos_json|safe }};
+</script>
 <script src="{% static 'js/actividades.js' %}"></script>
 {% endblock %}

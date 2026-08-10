@@ -1,12 +1,25 @@
 from django import forms
 from Base.models import Usuario
 
+# Agregamos la opción por defecto vacía
+CHOICES_ROL = [('', '-- Seleccione un Rol --')] + Usuario.ROL
 
 class CrearUsuarioForm(forms.ModelForm):
     """
     Formulario para el registro de nuevos usuarios en el panel administrativo.
     Utiliza el DNI como contraseña temporal inicial y fuerza el cambio de clave en el primer inicio.
     """
+    rol = forms.ChoiceField(
+        choices=CHOICES_ROL,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='ROL EN EL SISTEMA',
+        error_messages={
+            'required': 'Debe seleccionar un rol obligatoriamente.',
+            'invalid_choice': 'Seleccione una opción de rol válida.'
+        }
+    )
+
     class Meta:
         model = Usuario
         fields = ['nombre', 'apellidos', 'dni', 'email', 'telefono', 'cargo', 'rol']
@@ -17,7 +30,6 @@ class CrearUsuarioForm(forms.ModelForm):
             'email': 'EMAIL',
             'telefono': 'TELÉFONO',
             'cargo': 'CARGO',
-            'rol': 'ROL EN SISTEMA',
         }
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Juan'}),
@@ -26,7 +38,6 @@ class CrearUsuarioForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@th.club'}),
             'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '9 dígitos', 'maxlength': '9'}),
             'cargo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Directora de RH'}),
-            'rol': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def save(self, commit=True):
@@ -53,6 +64,18 @@ class EditarUsuarioForm(forms.ModelForm):
     Formulario para la edición de usuarios existentes desde el panel administrativo.
     Permite modificar datos personales, cargo, rol y activar/desactivar la cuenta.
     """
+
+    rol = forms.ChoiceField(
+        choices=CHOICES_ROL,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='ROL EN EL SISTEMA',
+        error_messages={
+            'required': 'Debe seleccionar un rol obligatoriamente.',
+            'invalid_choice': 'Seleccione una opción de rol válida.'
+        }
+    )
+
     class Meta:
         model = Usuario
         fields = ['nombre', 'apellidos', 'dni', 'email', 'telefono', 'cargo', 'rol', 'is_active']
@@ -73,6 +96,5 @@ class EditarUsuarioForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'telefono': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '9'}),
             'cargo': forms.TextInput(attrs={'class': 'form-control'}),
-            'rol': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
