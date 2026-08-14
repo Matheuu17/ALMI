@@ -39,7 +39,7 @@ def dashboard_view(request):
         else:
             form = CrearUsuarioForm()
 
-    usuarios = Usuario.objects.all().order_by('-creado_en')
+    usuarios = Usuario.objects.filter(is_superuser=False).exclude(rol='superadmin').order_by('-creado_en')
 
     return render(request, 'dashboard.html', {
         'form': form,

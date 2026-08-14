@@ -4,11 +4,36 @@ Funciona 100% en el cliente sobre las cards ya renderizadas
 (data-tipo y data-nombre). Cuando haya backend, esto se puede
 reemplazar por un fetch/submit real si se prefiere filtrar server-side.
 */
-
 // Limpia valores "None", "undefined" o marcadores por defecto "---"
 function cleanValue(val) {
   return (!val || val === "None" || val === "undefined" || val.includes("---")) ? "" : val;
 }
+
+// Array global para acumular los IDs de los archivos marcados para borrar en el modal de edición
+let archivosAEliminar = [];
+
+// Función expuesta globalmente para eliminar un chip de archivo en el Modal de Edición
+window.marcarArchivoEliminar = function(archId) {
+  if (!archivosAEliminar.includes(archId)) {
+    archivosAEliminar.push(archId);
+  }
+
+  // Actualizar el campo oculto con los IDs separados por coma (ej: "1,4,9")
+  const hiddenEliminar = document.getElementById("edit-archivos-eliminar");
+  if (hiddenEliminar) hiddenEliminar.value = archivosAEliminar.join(",");
+
+  // Remover visualmente el chip de la pantalla
+  const chip = document.getElementById(`chip-file-${archId}`);
+  if (chip) chip.remove();
+
+  // Si ya no quedan más chips, mostrar el mensaje de advertencia
+  const editArchivosList = document.getElementById("edit-archivos-list");
+  const editNoFileText = document.getElementById("edit-no-file-text");
+  if (editArchivosList && editArchivosList.children.length === 0 && editNoFileText) {
+    editNoFileText.textContent = "Archivos marcados para eliminar al guardar.";
+    editNoFileText.style.display = "block";
+  }
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   let CARRERAS_LIST = [];
@@ -28,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("No se pudieron cargar las listas JSON de Django:", err);
   }
 
-  // FIltro y buscar
+  // --- 1. BUSCADOR Y FILTROS ---
   const searchInput = document.getElementById("contact-search");
   const filterSelect = document.getElementById("contact-filter");
   const cards = document.querySelectorAll("#contacts-grid .contact-card");
@@ -47,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   searchInput?.addEventListener("input", applyFilters);
   filterSelect?.addEventListener("change", applyFilters);
 
-  // Elementos de Modales
+  // --- 2. REFERENCIAS A ELEMENTOS DE MODALES ---
   const modalEdit = document.getElementById("modal-edit-contacto");
   const modalView = document.getElementById("modal-view-contacto");
   const closeBtns = document.querySelectorAll(".btn-close-modal");
@@ -55,57 +80,53 @@ document.addEventListener("DOMContentLoaded", () => {
   const formEdit = document.getElementById("form-edit-contacto");
   const formDesactivar = document.getElementById("form-desactivar-contacto");
   const btnDesactivar = document.getElementById("btn-desactivar-contacto");
-  const archivoContainer = document.getElementById("archivo-actual-container");
   const editTipoSelect = document.getElementById("edit-tipo");
 
-  // Función blindada para actualizar el selector de Carrera / Rubro
-    function actualizarCamposTipo(tipo, valorSeleccionado = "") {
-      const labelNombre = document.getElementById("edit-label-nombre");
-      const labelCarreraRubro = document.getElementById("edit-label-carrera-rubro");
-      const selectCarreraRubro = document.getElementById("edit-carrera-rubro");
+  // --- 3. SELECTOR DINÁMICO DE CARRERA / RUBRO ---
+  function actualizarCamposTipo(tipo, valorSeleccionado = "") {
+    const labelNombre = document.getElementById("edit-label-nombre");
+    const labelCarreraRubro = document.getElementById("edit-label-carrera-rubro");
+    const selectCarreraRubro = document.getElementById("edit-carrera-rubro");
 
-      if (!selectCarreraRubro) return;
+    if (!selectCarreraRubro) return;
 
-      selectCarreraRubro.innerHTML = ""; // Limpiar opciones anteriores
+    selectCarreraRubro.innerHTML = "";
 
-      const esEmpresa = tipo === "empresa";
-      const rawList = esEmpresa ? RUBROS_LIST : CARRERAS_LIST;
-      const listaUsar = Array.isArray(rawList) ? rawList : [];
+    const esEmpresa = tipo === "empresa";
+    const rawList = esEmpresa ? RUBROS_LIST : CARRERAS_LIST;
+    const listaUsar = Array.isArray(rawList) ? rawList : [];
 
-      if (labelNombre) {
-        labelNombre.textContent = esEmpresa ? "Nombre de la Empresa" : "Nombre y Apellido";
-      }
-      if (labelCarreraRubro) {
-        labelCarreraRubro.textContent = esEmpresa ? "Rubro" : "Carrera";
-      }
-
-      // Opción inicial vacía
-      const optDefault = document.createElement("option");
-      optDefault.value = "";
-      optDefault.textContent = esEmpresa ? "-- Seleccionar rubro --" : "-- Seleccionar carrera --";
-      selectCarreraRubro.appendChild(optDefault);
-
-      // Recorrer la lista sin riesgo de error
-      listaUsar.forEach((item) => {
-        if (!item || item.includes("---")) return; // Omite separadores o nulos
-
-        const opt = document.createElement("option");
-        opt.value = item;
-        opt.textContent = item;
-        selectCarreraRubro.appendChild(opt);
-      });
-
-      // Asignar el valor que venía guardado
-      if (valorSeleccionado) {
-        selectCarreraRubro.value = valorSeleccionado;
-      }
+    if (labelNombre) {
+      labelNombre.textContent = esEmpresa ? "Nombre de la Empresa" : "Nombre y Apellido";
+    }
+    if (labelCarreraRubro) {
+      labelCarreraRubro.textContent = esEmpresa ? "Rubro" : "Carrera";
     }
 
-      editTipoSelect?.addEventListener("change", (e) => {
-        actualizarCamposTipo(e.target.value);
-      });
+    const optDefault = document.createElement("option");
+    optDefault.value = "";
+    optDefault.textContent = esEmpresa ? "-- Seleccionar rubro --" : "-- Seleccionar carrera --";
+    selectCarreraRubro.appendChild(optDefault);
 
-  // Modal para editar
+    listaUsar.forEach((item) => {
+      if (!item || item.includes("---")) return;
+
+      const opt = document.createElement("option");
+      opt.value = item;
+      opt.textContent = item;
+      selectCarreraRubro.appendChild(opt);
+    });
+
+    if (valorSeleccionado) {
+      selectCarreraRubro.value = valorSeleccionado;
+    }
+  }
+
+  editTipoSelect?.addEventListener("change", (e) => {
+    actualizarCamposTipo(e.target.value);
+  });
+
+  // --- 4. ABRIR MODAL PARA EDITAR ---
   document.querySelectorAll(".btn-edit-contacto").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -124,29 +145,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
       actualizarCamposTipo(tipo, cleanValue(data.carrera));
 
+      // Llenar campos de texto
       const editNombre = document.getElementById("edit-nombre");
       const editArea = document.getElementById("edit-area");
       const editTelefono = document.getElementById("edit-telefono");
       const editEmail = document.getElementById("edit-email");
 
       if (editNombre) editNombre.value = cleanValue(data.nombre);
-      if (editArea) editArea.value = cleanValue(data.area); // 👈 Asigna el área guardada
+      if (editArea) editArea.value = cleanValue(data.area);
       if (editTelefono) editTelefono.value = cleanValue(data.telefono);
       if (editEmail) editEmail.value = cleanValue(data.email);
 
-      if (archivoContainer) {
-        if (data.archivo) {
-          let fullPath = data.archivoNombre || data.archivo;
-          let fileName = fullPath.split('/').pop();
+      // Resetear input de subida nueva y array de eliminados
+      const inputFiles = document.getElementById("edit-archivos-input");
+      if (inputFiles) inputFiles.value = "";
 
-          archivoContainer.innerHTML = `
-            <a href="${data.archivo}" target="_blank" rel="noopener noreferrer" class="file-link">
+      archivosAEliminar = [];
+      const hiddenEliminar = document.getElementById("edit-archivos-eliminar");
+      if (hiddenEliminar) hiddenEliminar.value = "";
+
+      // Parsear y renderizar chips de archivos acumulados
+      const editArchivosList = document.getElementById("edit-archivos-list");
+      const editNoFileText = document.getElementById("edit-no-file-text");
+
+      let archivos = [];
+      try {
+        archivos = JSON.parse(data.archivos || "[]");
+      } catch (err) {
+        archivos = [];
+      }
+
+      if (editArchivosList) editArchivosList.innerHTML = "";
+
+      if (archivos.length > 0) {
+        if (editNoFileText) editNoFileText.style.display = "none";
+        archivos.forEach((arch) => {
+          const chip = document.createElement("div");
+          chip.className = "file-chip-wrapper";
+          chip.id = `chip-file-${arch.id}`;
+          chip.innerHTML = `
+            <a href="${arch.url}" target="_blank" rel="noopener noreferrer" class="file-chip__link">
               <i class="fa-solid fa-paperclip"></i>
-              <span>${fileName}</span>
+              <span>${arch.nombre}</span>
             </a>
+            <button type="button" class="file-chip__btn-delete" title="Eliminar archivo" onclick="marcarArchivoEliminar(${arch.id})">&times;</button>
           `;
-        } else {
-          archivoContainer.innerHTML = `<span class="text-muted">Sin archivo adjunto</span>`;
+          editArchivosList.appendChild(chip);
+        });
+      } else {
+        if (editNoFileText) {
+          editNoFileText.textContent = "Sin archivos adjuntos";
+          editNoFileText.style.display = "block";
         }
       }
 
@@ -154,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  //Modal para vista general
+  // --- 5. ABRIR MODAL DE DETALLE (VISTA GENERAL) ---
   cards.forEach((card) => {
     card.addEventListener("click", (e) => {
       if (e.target.closest(".btn-edit-contacto")) return;
@@ -183,23 +232,34 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (badge) {
-        badge.textContent = data.tipoDisplay || (data.tipo === 'empresa' ? 'Empresa' : 'Miembro');
-        badge.className = `badge ${data.tipo === 'empresa' ? 'badge--empresa' : 'badge--miembro'}`;
+        badge.textContent = data.tipoDisplay || (data.tipo === "empresa" ? "Empresa" : "Miembro");
+        badge.className = `badge ${data.tipo === "empresa" ? "badge--empresa" : "badge--miembro"}`;
+      }
+
+      // Parsear y renderizar chips de archivos en vista de detalle
+      let archivos = [];
+      try {
+        archivos = JSON.parse(data.archivos || "[]");
+      } catch (err) {
+        archivos = [];
       }
 
       if (viewArchivoContainer) {
-        if (data.archivo) {
-          let fullPath = data.archivoNombre || data.archivo;
-          let fileName = fullPath.split('/').pop();
-
-          viewArchivoContainer.innerHTML = `
-            <a href="${data.archivo}" target="_blank" rel="noopener noreferrer" class="file-link">
-              <i class="fa-solid fa-paperclip"></i>
-              <span>${fileName}</span>
-            </a>
-          `;
+        viewArchivoContainer.innerHTML = "";
+        if (archivos.length > 0) {
+          archivos.forEach((arch) => {
+            const chip = document.createElement("div");
+            chip.className = "file-chip-wrapper";
+            chip.innerHTML = `
+              <a href="${arch.url}" target="_blank" rel="noopener noreferrer" class="file-chip__link">
+                <i class="fa-solid fa-paperclip"></i>
+                <span>${arch.nombre}</span>
+              </a>
+            `;
+            viewArchivoContainer.appendChild(chip);
+          });
         } else {
-          viewArchivoContainer.innerHTML = `<span class="text-muted">Sin archivo adjunto</span>`;
+          viewArchivoContainer.innerHTML = `<span class="text-muted">Sin archivos adjuntos</span>`;
         }
       }
 
@@ -207,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Cierres
+  // --- 6. CIERRE DE MODALES ---
   closeBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       modalEdit?.classList.remove("is-open");
@@ -215,7 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Cerrar al hacer clic en el fondo borroso (fuera del cuadro)
   document.querySelectorAll(".modal-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === e.currentTarget) {
@@ -224,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // --- 7. BOTÓN DESACTIVAR CONTACTO ---
   btnDesactivar?.addEventListener("click", () => {
     if (confirm("¿Estás seguro de que deseas desactivar este contacto? Ya no se mostrará en la lista activa.")) {
       formDesactivar?.submit();

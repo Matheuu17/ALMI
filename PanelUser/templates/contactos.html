@@ -48,8 +48,12 @@
            data-telefono="{{ contacto.telefono|default:'' }}"
            data-email="{{ contacto.email }}"
            data-creado="{{ contacto.creado_por.nombre_completo|default:contacto.creado_por.nombre }}"
-           data-archivo="{% if contacto.archivo %}{{ contacto.archivo.url }}{% endif %}"
-           data-archivo-nombre="{% if contacto.archivo %}{{ contacto.archivo.name }}{% endif %}">
+           data-creador="{{ contacto.creado_por.get_full_name|default:contacto.creado_por.email }}"
+           data-archivos='[
+             {% for arch in contacto.archivos.all %}
+               {"id": {{ arch.id }}, "url": "{{ arch.archivo.url }}", "nombre": "{{ arch.nombre_archivo }}"}{% if not forloop.last %},{% endif %}
+             {% endfor %}
+           ]'>
 
     <h3 class="contact-card__name">{{ contacto.nombre }}</h3>
     <span class="badge badge--{{ contacto.tipo_contacto }}">
@@ -61,7 +65,7 @@
     </p>
 
     <div class="contact-card__footer">
-      <button type="button" class="icon-btn icon-btn--ghost icon-btn--sm btn-edit-contacto">
+      <button type="button" class="icon-btn icon-btn--ghost icon-btn--sm btn-edit-contacto" title="Editar contacto">
         <i class="fa-solid fa-pen"></i>
       </button>
 
@@ -113,10 +117,11 @@
           <p id="view-creado" class="detail-value">-</p>
         </div>
 
+        <!-- Sección de archivos acumulados en Detalle -->
         <div class="detail-item">
-          <span class="detail-label"><i class="fa-solid fa-paperclip"></i> Archivo Adjunto</span>
-          <div id="view-archivo-container" class="detail-value">
-            <span class="text-muted">Sin archivo</span>
+          <span class="detail-label"><i class="fa-solid fa-paperclip"></i> Archivos Adjuntos</span>
+          <div id="view-archivo-container" class="detail-value" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+            <span class="text-muted">Sin archivos</span>
           </div>
         </div>
       </div>
@@ -138,6 +143,9 @@
 
     <form id="form-edit-contacto" method="post" action="" enctype="multipart/form-data">
       {% csrf_token %}
+
+      <!-- Campo oculto para IDs de archivos a eliminar -->
+      <input type="hidden" name="archivos_a_eliminar" id="edit-archivos-eliminar" value="">
 
       <!-- Fila 1: Nombre -->
       <div class="form-group mb-sm">
@@ -188,11 +196,17 @@
         <input type="email" id="edit-email" name="email" class="form-control" required>
       </div>
 
-      <!-- Fila 5: Archivo Adjunto -->
-      <div class="form-group mb-md">
-        <label class="form-label">Archivo Adjunto / Documento</label>
-        <input type="file" name="archivo" class="form-control">
-        <div id="archivo-actual-container" class="mt-xs text-muted" style="font-size: var(--fs-small);"></div>
+      <!-- Fila 5: Subir Nuevos Archivos Múltiples -->
+      <div class="form-group mb-sm">
+        <label class="form-label" for="edit-archivos-input">Subir Nuevo(s) Archivo(s)</label>
+        <input type="file" id="edit-archivos-input" name="archivos" class="form-control" multiple>
+      </div>
+
+      <!-- Fila 6: Sección Visual de Archivos Actuales Acumulados -->
+      <div class="form-group mb-md" id="archivo-actual-container">
+        <label class="form-label" style="margin-bottom: 4px;">Archivos adjuntos actuales:</label>
+        <div id="edit-archivos-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+        <p id="edit-no-file-text" class="text-muted" style="font-size: var(--fs-small, 0.85rem); margin: 4px 0 0 0; display: none;">Sin archivos adjuntos</p>
       </div>
 
       <!-- Acciones del Modal -->
@@ -207,13 +221,13 @@
         </div>
       </div>
     </form>
-
-    <!-- Formulario oculto para desactivación -->
-    <form id="form-desactivar-contacto" method="post" action="" style="display: none;">
-      {% csrf_token %}
-    </form>
   </div>
 </div>
+
+<!-- Formulario oculto para desactivación -->
+<form id="form-desactivar-contacto" method="post" action="" style="display: none;">
+  {% csrf_token %}
+</form>
 
 <!-- Inyección de listas Python/Django a datos JSON para JS -->
 {{ carreras|json_script:"carreras-data" }}

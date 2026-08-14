@@ -1,8 +1,24 @@
+from django import forms
 from django.contrib import admin
 from .models import Usuario
 
+class UsuarioAdminForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Excluimos la opción 'superadmin' del desplegable en el panel de administración
+        if 'rol' in self.fields:
+            self.fields['rol'].choices = [
+                ('admin_crm', 'Administrador de CRM'),
+                ('panel_user', 'Usuario del Panel'),
+            ]
+
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
+    form = UsuarioAdminForm
     list_display = ('email', 'nombre', 'apellidos', 'dni', 'rol', 'debe_cambiar_password', 'is_active')
     search_fields = ('email', 'nombre', 'apellidos', 'dni')
     list_filter = ('rol', 'debe_cambiar_password', 'is_active')

@@ -27,6 +27,7 @@ class UsuarioManager(BaseUserManager):
         extra_fields['rol'] = ''
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('rol', 'superadmin')
         extra_fields.setdefault('is_active', True)
 
         if extra_fields.get('is_staff') is not True:
@@ -66,6 +67,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     Modelo de Usuario personalizado autenticado mediante correo electrónico.
     """
     ROL = [
+        ('superadmin', 'Super Administrador'),
+        ('admin_crm', 'Administrador de CRM'),
+        ('panel_user', 'Usuario del Panel'),
+    ]
+
+    ROLES_PANEL = [
         ('admin_crm', 'Administrador de CRM'),
         ('panel_user', 'Usuario del Panel'),
     ]
@@ -84,6 +91,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         help_text='Etiqueta/Badge visible (Ej: Directora, Coordinador, Ejecutivo)'
     )
     rol = models.CharField(max_length=25, choices=ROL, blank=False, null=False )
+
     def clean(self):
         super().clean()
         # Si NO es superusuario y no seleccionó rol, lanzar error explícito
@@ -94,7 +102,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         self.full_clean()  # Fuerza a que ejecute las reglas de clean() antes de insertar en BD
         super().save(*args, **kwargs)
 
-    area = models.CharField(max_length=50, choices=Area.OPCIONES_AREA, blank=True, default='')
+        area = models.CharField(max_length=50, choices=Area.OPCIONES_AREA, blank=True, null=True, default='')
 
     # Flags de Estado y Permisos
     is_active = models.BooleanField(default=True)
@@ -132,13 +140,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def clean(self):
         """Validaciones de reglas de negocio antes de guardar."""
+        # Si es superusuario, le forzamos la asignación del rol 'superadmin'
         if self.is_superuser:
-            if self.rol:
-                raise ValidationError('Un superusuario no debe tener rol asignado.')
-            return
-
-        if not self.rol:
-            raise ValidationError('El rol es obligatorio para usuarios del sistema.')
+            self.rol = 'superadmin'
+        # Si NO es superusuario y no seleccionó ningún rol, exige uno
+        elif not self.rol:
+            raise ValidationError({'rol': 'El rol en el sistema es obligatorio.'})
 
     def save(self, *args, **kwargs):
         self.full_clean()

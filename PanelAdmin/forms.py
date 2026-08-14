@@ -2,7 +2,7 @@ from django import forms
 from Base.models import Usuario
 
 # Agregamos la opción por defecto vacía
-CHOICES_ROL = [('', '-- Seleccione un Rol --')] + Usuario.ROL
+CHOICES_ROL = [('', '-- Seleccione un Rol --')] + Usuario.ROLES_PANEL
 
 class CrearUsuarioForm(forms.ModelForm):
     """

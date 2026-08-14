@@ -4,7 +4,7 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.contrib.auth import logout
 from .forms import ContactoForm, ActividadForm
-from .models import Contacto, Actividad
+from .models import Contacto, Actividad, ArchivoContacto
 import json
 # Listas de opciones de catálogo
 CARRERAS_LIST = [
@@ -110,43 +110,55 @@ def contactos_view(request):
 
 @login_required
 def form_contactos_view(request):
-    """Procesa el formulario para registrar un nuevo contacto con archivo opcional."""
+    """Crea un nuevo contacto y guarda múltiples archivos si se adjuntan."""
     if request.method == 'POST':
-        form = ContactoForm(request.POST, request.FILES)  # Se agrega request.FILES
+        form = ContactoForm(request.POST)
         if form.is_valid():
             contacto = form.save(commit=False)
             contacto.creado_por = request.user
             contacto.save()
-            messages.success(request, 'Contacto agregado correctamente.')
+
+            # Guardar múltiples archivos
+            for f in request.FILES.getlist('archivos'):
+                ArchivoContacto.objects.create(contacto=contacto, archivo=f)
+
+            messages.success(request, 'Contacto y archivos registrados exitosamente.')
             return redirect('PanelUser:contactos')
     else:
         form = ContactoForm()
 
-    context = {
-        'form': form,
-        'carreras': CARRERAS_LIST,
-        'rubros': RUBROS_LIST,
-        'areas': AREAS_LIST,
-    }
-    return render(request, 'form_contactos.html', context)
+    return render(request, 'form_contactos.html', {'form': form})
 
 
 @login_required
 @require_POST
 def editar_contacto(request, contacto_id):
-    """Actualiza la información de un contacto desde la vista rápida."""
+    """Actualiza los datos del contacto, borra archivos marcados y acumula nuevos."""
     contacto = get_object_or_404(Contacto, id=contacto_id)
+
     contacto.nombre = request.POST.get('nombre')
     contacto.tipo_contacto = request.POST.get('tipo_contacto')
     contacto.carrera_rubro = request.POST.get('carrera_rubro')
     contacto.area = request.POST.get('area')
     contacto.telefono = request.POST.get('telefono')
     contacto.email = request.POST.get('email')
-
-    if 'archivo' in request.FILES:
-        contacto.archivo = request.FILES['archivo']
-
     contacto.save()
+
+    # Elimina archivos
+    ids_eliminar = request.POST.get('archivos_a_eliminar', '')
+    if ids_eliminar:
+        for arch_id in ids_eliminar.split(','):
+            arch_id = arch_id.strip()
+            if arch_id.isdigit():
+                archivo_obj = ArchivoContacto.objects.filter(id=arch_id, contacto=contacto).first()
+                if archivo_obj:
+                    archivo_obj.archivo.delete(save=False) # Borra archivo del disco
+                    archivo_obj.delete() # Borra de la BD
+
+    # Acumula los archivos, no los sobrepone
+    for f in request.FILES.getlist('archivos'):
+        ArchivoContacto.objects.create(contacto=contacto, archivo=f)
+
     messages.success(request, 'Contacto actualizado correctamente.')
     return redirect('PanelUser:contactos')
 
