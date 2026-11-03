@@ -173,4 +173,4 @@ Para el despliegue en **Render** (o servicios similares):
 
 ## 👥 Diseño y Créditos
 
-* **Me & @Lucero Cubas.** 
+* **@Lucero Cubas & Me.** 
